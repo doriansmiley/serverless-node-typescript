@@ -1,0 +1,135 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2.1
+jobs:
+  test-suites:
+    docker:
+      - image: 166461770341.dkr.ecr.us-west-2.amazonaws.com/build/lambda-node
+
+    environment:
+      - AWS_XRAY_CONTEXT_MISSING=LOG_ERROR
+      - API_GATEWAY_HOST=localhost
+      - API_GATEWAY_PORT=3000
+      - JWT_SECRET=anything
+      - STAGE=local
+      - ALERT_EMAIL=you@you.com
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout:
+          path: ~/repo
+
+      - add_ssh_keys:
+          fingerprints:
+          - "ad:dd:cd:fe:15:ca:0b:1f:1c:f2:4f:32:30:34:37:06"
+
+      # Download and cache dependencies
+      # @todo: cache is causing problems with build
+      # - restore_cache:
+      #     keys:
+      #       - v1-dependencies-{{ checksum "package.json" }}
+      #       # fallback to using the latest cache if no exact match is found
+      #       - v1-dependencies-
+
+      - run:
+          name: "npm login"
+          command: |
+            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+
+      - run:
+          # @important: currently dependency scripts do not work with yarn
+          name: npm install
+          command: npm config set unsafe-perm true && npm install
+
+      # CircleCI does not support interpolation when setting environment variables
+      # As a workaround, use a run step to export environment variables
+      - run:
+          name: "Run tests"
+          command: npm run test
+
+      # @todo: cache is causing problems with build
+      # - save_cache:
+      #     paths:
+      #       - node_modules
+      #     key: v1-dependencies-{{ checksum "package.json" }}
+
+      - persist_to_workspace:
+          root: .
+          paths: .
+
+  update-service:
+    docker:
+      - image: 166461770341.dkr.ecr.us-west-2.amazonaws.com/build/lambda-node
+    environment:
+      AWS_DEFAULT_REGION: us-west-2
+
+    working_directory: ~/repo
+
+    steps:
+      # @important: must checkout the repo for github rsa to be added to known hosts
+      - checkout
+
+      - run:
+          name: Clean up directory for workspace attachment
+          command: rm -r ~/repo/*
+
+      - attach_workspace:
+          at: .
+
+      - add_ssh_keys:
+          fingerprints:
+            - "ad:dd:cd:fe:15:ca:0b:1f:1c:f2:4f:32:30:34:37:06"
+
+      - run:
+          name: Set up environment variables
+          command: bash automation/scripts/setup-deploy-env.sh
+
+      - run:
+          name: Deploy service
+          no_output_timeout: 25m
+          command: |
+            # get environment variables
+            source /scripts/bash-env
+            npm config set unsafe-perm true && serverless deploy -v --conceal \
+              --profile serverless \
+              --stage ${STAGE_NAME} \
+              --alert-email ${AWS_ALERT_EMAIL} \
+              --vpc-security-group ${AWS_SECURITY_GROUP} \
+              --vpc-subnet-a ${AWS_SUBNET_A} \
+              --vpc-subnet-b ${AWS_SUBNET_B} \
+              --jwt-secret ${JWT_SECRET}
+
+workflows:
+  build-deploy-api:
+    jobs:
+      - test-suites:
+          context: microservices-global
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+  dev-deploy-nightly:
+    triggers:
+      - schedule:
+          cron: "0 7 * * *"
+          filters:
+            branches:
+              only: /^develop$/
+    jobs:
+      - test-suites:
+          context: microservices-global
+          filters:
+            branches:
+              only: /^develop$/
+      - update-service:
+          context: microservices-global
+          name: update-dev-service
+          requires:
+            - test-suites
+          filters:
+            branches:
+              only: /^develop$/
