@@ -1,6 +1,7 @@
 import * as AWSXRay from 'aws-xray-sdk';
 // debug is a hierarchical logging tool, for more info see https://www.npmjs.com/package/debug
 import * as Debug from 'debug';
+
 const debug = Debug(process.env.APP_NAME);
 import {object, validate, ValidationOptions, ValidationResult as JoiValidationResult} from 'joi';
 
@@ -18,18 +19,20 @@ export abstract class AbstractHandler {
     public async invoke(event): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             // add X-Ray telemetry passing the subsegment
-            AWSXRay.captureAsyncFunc(this.getSegmentName(), async (subsegment) => {
-                try {
-                    const result = await this.processRequest(event);
-                    resolve(result);
-                } catch (e) {
-                    this.log(LogLevels.ERROR, e.message, event, e);
-                    reject(e);
-                } finally {
-                    subsegment.close();
-                }
+            AWSXRay.captureAsyncFunc(this.getSegmentName(),
+                async (subsegment) => {
+                    try {
+                        const result = await this.processRequest(event);
+                        resolve(result);
+                    } catch (e) {
+                        this.log(LogLevels.ERROR, e.message, event, e);
+                        reject(e);
+                    } finally {
+                        // TODO figure out why this fails in local testing. subsegment is undefined, and so is AWSXRay.getSegment()
+                        subsegment.close();
+                    }
 
-            });
+                });
         });
     }
 

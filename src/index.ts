@@ -5,16 +5,26 @@ import {Handler} from "./handlers/Handler";
 
 export const handler: APIGatewayProxyHandler = async (event, context: Context) => {
     // Your Lambda function should do nothing but grab the payload from the incoming event
-    // and invoke you handler and return a result
-    // by abstracting handlers from the Lambda layer they can be distributed as part of an SDK
+    // setup telemetry with x-ray, invoke you handler and return a result
+    // by abstracting handlers from the Lambda layer they can be used to compose new services
     // start x-ray segment
     const segment = new AWSXRay.Segment(process.env.APP_NAME);
-    AWSXRay.setSegment(segment);
+    var ns = AWSXRay.getNamespace();
     try{
+        // setup xray
+        // https://github.com/aws/aws-xray-sdk-node/tree/master/packages/core#developing-custom-solutions-using-automatic-mode
+         await (async ()=>{
+             return new Promise((resolve, reject)=>{
+                 ns.run(function () {
+                     AWSXRay.setSegment(segment);
+                     resolve();
+                 });
+             })
+         })();
         // format the payload based on the event source
         // More info on types of events at https://docs.aws.amazon.com/lambda/latest/dg/lambda-services.html
         // be sure to assign the correct type to the handler constant defined above, APIGatewayProxyHandler is placeholder
-        return await new Handler().invoke({data: event.body});
+        return await new Handler().invoke(event);
     } catch (e) {
         // this throw statement is suspended until finally block has completed
         throw e;

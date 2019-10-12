@@ -6,6 +6,7 @@ export LOCAL_TESTING=1
 [[ -z $API_GATEWAY_HOST ]] && export API_GATEWAY_HOST='localhost'
 [[ -z $API_GATEWAY_PORT ]] && export API_GATEWAY_PORT=3000
 [[ -z $STAGE ]] && export STAGE=local
+[[ -z $APP_NAME ]] && export APP_NAME=serverless-node-typescript
 
 # Determine if testing locally
 # if [ -z string ] True if the string is null (an empty string)
@@ -18,6 +19,9 @@ printf "\nRunning integration tests on $API_GATEWAY_HOST\n"
 if [ "$LOCAL_TESTING" = "1" ]; then
 
     printf "\nDoing local integration testing\n"
+
+    # ensure xray logs errors
+    export AWS_XRAY_CONTEXT_MISSING=LOG_ERROR
 
     # Make sure service port is available
     printf "\nChecking if port $API_GATEWAY_PORT is available\n"
