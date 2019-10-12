@@ -1,6 +1,8 @@
 # serverless-node-typescript
 Serverless template for Lambda using eslint, webpack, and TypeScript
 
+# What's Included
+
 # Getting Started
 ```
 $ sls install -url https://github.com/doriansmiley/serverless-node-typescript --name my-new-service
@@ -11,13 +13,11 @@ This will create a new project in your working directory. Once installed the pro
 - Edit `index.ts` to adjust your return object format
 - You should not need to edit `AbstractHandler` at all.
 
-### What's Included
-
-# Build
+### Build
 `npm run build`
 
-# Test
+### Test
 `npm test`
 
-# Deploy
+### Deploy
 
