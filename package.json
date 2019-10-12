@@ -5,7 +5,7 @@
   "repository": "https://github.com/doriansmiley/serverless-node-typescript",
   "main": "lib/index.js",
   "scripts": {
-    "build": "npm run lint && tsc",
+    "build": "npm run lint && tsc && serverless package",
     "test": "npm run build && npm run unit-test && npm run integration-test",
     "lint": "eslint --quiet src/**/**.ts",
     "unit-test": "bash ./test/unit/test.sh",
