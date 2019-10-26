@@ -12,4 +12,8 @@ export class Handler extends AbstractHandler {
     protected getSchema(): object {
         return object({});
     }
+
+    protected getSegmentName(): string {
+        return 'Handler.processRequest';
+    }
 }
