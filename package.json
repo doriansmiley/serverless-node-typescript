@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.1",
-    "aws-sdk": "^2.334.0",
+    "aws-sdk": "^2.814.0",
     "aws-xray-sdk": "^2.1.0",
     "debug": "^4.1.1",
     "joi": "^14.3.1",
