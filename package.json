@@ -17,7 +17,7 @@
   "author": "Dorian Smiley",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.6.1",
+    "async": "^2.6.4",
     "aws-sdk": "^2.334.0",
     "aws-xray-sdk": "^2.1.0",
     "debug": "^4.1.1",
